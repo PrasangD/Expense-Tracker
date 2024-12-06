@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daily Expense Tracker</title>
+  <link rel="stylesheet" href="style3.css">
+</head>
+<body>
+  <div id="app-container">
+    <header>
+      <h1>Daily Expense Tracker</h1>
+    </header>
+    <section id="summary">
+      <p>Total Expense: ₹<span id="total-expense">0.00</span></p>
+      <p>UPI: ₹<span id="upi-expense">0.00</span></p>
+      <p>Cash: ₹<span id="cash-expense">0.00</span></p>
+      <p>Other: ₹<span id="other-expense">0.00</span></p>
+    </section>
+    <section id="add-expense">
+      <h2>Add Expense</h2>
+      <form id="expense-form">
+        <input type="number" id="amount" placeholder="Amount" required>
+        <input type="text" id="description" placeholder="Description" required>
+        <div>
+          <label>
+            <input type="radio" name="payment" value="UPI" required> UPI
+          </label>
+          <label>
+            <input type="radio" name="payment" value="Cash"> Cash
+          </label>
+          <label>
+            <input type="radio" name="payment" value="Other"> Other
+          </label>
+        </div>
+        <button type="submit">Add Expense</button>
+        <!-- Reset Button -->
+        <!-- Add this Reset Button to your form -->
+<button type="reset" id="reset-btn">Reset</button>
+
+      </form>
+    </section>
+    <section id="history">
+      <h2>Expense History</h2>
+      <ul id="expense-history"></ul>
+    </section>
+  </div>
+  <script type="module" src="script3.js"></script>
+</body>
+</html>
