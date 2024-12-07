@@ -49,4 +49,34 @@ body {
   a:hover {
     text-decoration: underline;
   }
+
+ /* Password Container Styling */
+.password-container {
+    position: relative;
+    width: 80%;
+  }
+  
+  .password-container input {
+    width: 100%;
+    padding: 10px 40px 10px 10px; /* Space for the eye icon */
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  
+  /* Eye Icon Styling */
+  .toggle-password {
+    position: absolute;
+    top: 50%;
+    right: -30px;
+    transform: translateY(-50%);
+    cursor: pointer;
+    font-size: 18px;
+    color: #6a11cb;
+    transition: color 0.3s ease;
+  }
+  
+  .toggle-password:hover {
+    color: #2575fc;
+  }
   
