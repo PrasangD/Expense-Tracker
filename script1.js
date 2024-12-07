@@ -32,10 +32,12 @@ loginForm.addEventListener("submit", async (e) => {
 
   try {
     await signInWithEmailAndPassword(auth, email, password);
-    loginContainer.style.display = "none";
-    appContainer.style.display = "block";
+    alert("Login Successful!");
+    // Redirect to app.html
+    window.location.href = "app.html";
   } catch (error) {
-    alert(error.message);
+    console.error("Login Failed:", error.message);
+    alert(`Error: ${error.message}`);
   }
 });
 
@@ -44,13 +46,13 @@ googleLoginButton.addEventListener("click", async () => {
   const provider = new GoogleAuthProvider();
   
   try {
-    const result = await signInWithPopup(auth, provider);
-    const user = result.user;
-    alert("Logged in as " + user.displayName);
-    loginContainer.style.display = "none";
-    appContainer.style.display = "block";
+    await signInWithPopup(auth, provider);
+    alert("Login Successful!");
+    // Redirect to app.html
+    window.location.href = "app.html";
   } catch (error) {
-    alert(error.message);
+    console.error("Google Login Failed:", error.message);
+    alert(`Error: ${error.message}`);
   }
 });
 
