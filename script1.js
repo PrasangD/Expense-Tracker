@@ -74,3 +74,4 @@ togglePassword.addEventListener("click", () => {
   // Change icon based on password visibility
   togglePassword.textContent = type === "password" ? "\u{1F441}" : "\u{1F576}"; // Eye and Eye-slash icons
 });
+
