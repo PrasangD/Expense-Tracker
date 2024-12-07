@@ -129,3 +129,20 @@ resetButton.addEventListener('click', () => {
   // Clear expense history list
   expenseHistory.innerHTML = ''; 
 });
+
+
+// DOM Element
+const logoutButton = document.getElementById("logout-btn");
+
+// Logout Functionality
+logoutButton.addEventListener("click", async () => {
+  try {
+    await signOut(auth);
+    alert("You have been logged out.");
+    // Redirect to login page
+    window.location.href = "login.html";
+  } catch (error) {
+    console.error("Logout Error:", error.message);
+    alert(`Error: ${error.message}`);
+  }
+});
