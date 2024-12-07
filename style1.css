@@ -51,16 +51,30 @@ body {
     text-decoration: underline;
   }
 
-/* Password Toggle Styles */
+/* General Form Styling */
+.login-form {
+  width: 300px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* Password Container Styling */
 .password-container {
   position: relative;
   width: 100%;
 }
 
 .password-container input {
-  width: calc(100% - 40px); /* Leave space for the eye icon */
+  width: 100%;
+  padding: 10px 40px 10px 10px; /* Space for the eye icon */
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
 }
 
+/* Eye Icon Styling */
 .toggle-password {
   position: absolute;
   top: 50%;
@@ -75,5 +89,6 @@ body {
 .toggle-password:hover {
   color: #2575fc;
 }
+
 
   
