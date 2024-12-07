@@ -39,7 +39,7 @@ onAuthStateChanged(auth, (user) => {
     fetchExpenses(user.uid);
   } else {
     alert("Please log in to continue.");
-    window.location.href = "login.html";
+    window.location.href = "index.html";
   }
 });
 
