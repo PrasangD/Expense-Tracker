@@ -62,3 +62,15 @@ logoutButton.addEventListener("click", async () => {
   appContainer.style.display = "none";
   loginContainer.style.display = "block";
 });
+
+// Show/Hide Password
+const passwordInput = document.getElementById("password");
+const togglePassword = document.getElementById("toggle-password");
+
+togglePassword.addEventListener("click", () => {
+  const type = passwordInput.getAttribute("type") === "password" ? "text" : "password";
+  passwordInput.setAttribute("type", type);
+
+  // Change icon based on password visibility
+  togglePassword.textContent = type === "password" ? "\u{1F441}" : "\u{1F576}"; // Eye and Eye-slash icons
+});
