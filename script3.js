@@ -140,7 +140,7 @@ logoutButton.addEventListener("click", async () => {
     await signOut(auth);
     alert("You have been logged out.");
     // Redirect to login page
-    window.location.href = "login.html";
+    window.location.href = "index.html";
   } catch (error) {
     console.error("Logout Error:", error.message);
     alert(`Error: ${error.message}`);
