@@ -27,21 +27,8 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
     await createUserWithEmailAndPassword(auth, email, password);
     alert('Account created successfully! You can now log in.');
     // Redirect to login page
-    window.location.href = "login.html";
+    window.location.href = "index.html";
   } catch (error) {
     alert(`Error: ${error.message}`);
   }
 });
-
-// Show/Hide Password
-const passwordInput = document.getElementById("password");
-const togglePassword = document.getElementById("toggle-password");
-
-togglePassword.addEventListener("click", () => {
-  const type = passwordInput.getAttribute("type") === "password" ? "text" : "password";
-  passwordInput.setAttribute("type", type);
-
-  // Change icon based on password visibility
-  togglePassword.textContent = type === "password" ? "\u{1F441}" : "\u{1F576}"; // Eye and Eye-slash icons
-});
-
