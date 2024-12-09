@@ -22,20 +22,25 @@ const db = getFirestore(app);
 const expenseForm = document.getElementById("expense-form");
 const expenseHistory = document.getElementById("expense-history");
 const totalExpenseEl = document.getElementById("total-expense");
+const weeklyExpenseEl = document.getElementById("weekly-expense");
+const monthlyExpenseEl = document.getElementById("monthly-expense");
 const upiExpenseEl = document.getElementById("upi-expense");
 const cashExpenseEl = document.getElementById("cash-expense");
 const otherExpenseEl = document.getElementById("other-expense");
-const resetButton = document.getElementById('reset-btn'); // Reset button reference
+const resetButton = document.getElementById("reset-btn");
 
 // Track Totals
-let totalExpense = 0;
-let upiExpense = 0;
-let cashExpense = 0;
-let otherExpense = 0;
+let dailyExpense = 0;
+let weeklyExpense = 0;
+let monthlyExpense = 0;
+let dailyUpiExpense = 0;
+let dailyCashExpense = 0;
+let dailyOtherExpense = 0;
 
 // Ensure User is Logged In
 onAuthStateChanged(auth, (user) => {
   if (user) {
+    resetDailyExpenseIfNeeded(); // Reset daily totals if needed
     fetchExpenses(user.uid);
   } else {
     alert("Please log in to continue.");
@@ -46,7 +51,7 @@ onAuthStateChanged(auth, (user) => {
 // Add Expense
 expenseForm.addEventListener("submit", async (e) => {
   e.preventDefault();
-  
+
   const user = auth.currentUser;
   const amount = parseFloat(document.getElementById("amount").value);
   const description = document.getElementById("description").value;
@@ -58,17 +63,18 @@ expenseForm.addEventListener("submit", async (e) => {
   }
 
   try {
+    const now = new Date();
     await addDoc(collection(db, "expenses"), {
       userId: user.uid,
       amount,
       description,
       paymentMethod,
-      timestamp: new Date()
+      timestamp: now
     });
 
     alert("Expense added successfully!");
-    updateTotals(amount, paymentMethod);
-    addExpenseToHistory(amount, description, paymentMethod);
+    updateTotals(amount, paymentMethod, now);
+    addExpenseToHistory(amount, description, paymentMethod, now);
     expenseForm.reset();
   } catch (error) {
     console.error("Error adding expense:", error);
@@ -81,65 +87,124 @@ async function fetchExpenses(userId) {
   const q = query(collection(db, "expenses"), where("userId", "==", userId));
   const querySnapshot = await getDocs(q);
 
+  const groupedExpenses = {};
+  const today = new Date().toLocaleDateString();
+
+  // Reset totals
+  dailyExpense = 0;
+  dailyUpiExpense = 0;
+  dailyCashExpense = 0;
+  dailyOtherExpense = 0;
+  weeklyExpense = 0;
+  monthlyExpense = 0;
+
   querySnapshot.forEach((doc) => {
     const data = doc.data();
-    updateTotals(data.amount, data.paymentMethod);
-    addExpenseToHistory(data.amount, data.description, data.paymentMethod);
+    const date = new Date(data.timestamp.toDate()).toLocaleDateString();
+
+    if (!groupedExpenses[date]) {
+      groupedExpenses[date] = [];
+    }
+    groupedExpenses[date].push(data);
+
+    const amount = data.amount;
+    const method = data.paymentMethod;
+
+    // Update today's total only
+    if (date === today) {
+      dailyExpense += amount;
+      if (method === "UPI") dailyUpiExpense += amount;
+      if (method === "Cash") dailyCashExpense += amount;
+      if (method === "Other") dailyOtherExpense += amount;
+    }
+
+    // Update weekly and monthly totals
+    weeklyExpense += amount;
+    monthlyExpense += amount;
   });
+
+  // Update UI
+  totalExpenseEl.textContent = dailyExpense.toFixed(2);
+  weeklyExpenseEl.textContent = weeklyExpense.toFixed(2);
+  monthlyExpenseEl.textContent = monthlyExpense.toFixed(2);
+  upiExpenseEl.textContent = dailyUpiExpense.toFixed(2);
+  cashExpenseEl.textContent = dailyCashExpense.toFixed(2);
+  otherExpenseEl.textContent = dailyOtherExpense.toFixed(2);
+
+  // Render grouped expenses
+  renderGroupedExpenses(groupedExpenses);
 }
 
 // Update Totals
-function updateTotals(amount, method) {
-  totalExpense += amount;
-  totalExpenseEl.textContent = totalExpense.toFixed(2);
+function updateTotals(amount, method, timestamp) {
+  const today = new Date().toDateString();
+  const expenseDate = new Date(timestamp).toDateString();
 
-  if (method === "UPI") upiExpense += amount;
-  if (method === "Cash") cashExpense += amount;
-  if (method === "Other") otherExpense += amount;
+  if (expenseDate === today) {
+    dailyExpense += amount;
+    if (method === "UPI") dailyUpiExpense += amount;
+    if (method === "Cash") dailyCashExpense += amount;
+    if (method === "Other") dailyOtherExpense += amount;
+  }
 
-  upiExpenseEl.textContent = upiExpense.toFixed(2);
-  cashExpenseEl.textContent = cashExpense.toFixed(2);
-  otherExpenseEl.textContent = otherExpense.toFixed(2);
+  weeklyExpense += amount;
+  monthlyExpense += amount;
+
+  totalExpenseEl.textContent = dailyExpense.toFixed(2);
+  weeklyExpenseEl.textContent = weeklyExpense.toFixed(2);
+  monthlyExpenseEl.textContent = monthlyExpense.toFixed(2);
+  upiExpenseEl.textContent = dailyUpiExpense.toFixed(2);
+  cashExpenseEl.textContent = dailyCashExpense.toFixed(2);
+  otherExpenseEl.textContent = dailyOtherExpense.toFixed(2);
 }
 
-// Add Expense to History
-function addExpenseToHistory(amount, description, method) {
-  const li = document.createElement("li");
-  li.textContent = `₹${amount} - ${method} - ${description}`;
-  expenseHistory.appendChild(li);
+// Render Grouped Expenses
+function renderGroupedExpenses(groupedExpenses) {
+  expenseHistory.innerHTML = "";
+
+  Object.keys(groupedExpenses).forEach((date) => {
+    const dateSection = document.createElement("li");
+    dateSection.textContent = date;
+    dateSection.style.fontWeight = "bold";
+    dateSection.style.marginTop = "10px";
+    expenseHistory.appendChild(dateSection);
+
+    groupedExpenses[date].forEach((expense) => {
+      const li = document.createElement("li");
+      li.textContent = `₹${expense.amount} - ${expense.paymentMethod} - ${expense.description}`;
+      expenseHistory.appendChild(li);
+    });
+  });
 }
 
-// Reset the form and totals on frontend (does not affect Firebase)
-resetButton.addEventListener('click', () => {
-  // Reset form fields
-  document.getElementById("expense-form").reset();
+// Reset Daily Expense If Needed
+function resetDailyExpenseIfNeeded() {
+  const now = new Date();
+  const todayDate = now.toDateString();
+  const lastResetDate = localStorage.getItem("lastReset") || todayDate;
 
-  // Clear totals
-  totalExpense = 0;
-  upiExpense = 0;
-  cashExpense = 0;
-  otherExpense = 0;
+  // Check if it's a new day
+  if (lastResetDate !== todayDate) {
+    dailyExpense = 0;
+    dailyUpiExpense = 0;
+    dailyCashExpense = 0;
+    dailyOtherExpense = 0;
 
-  // Update displayed totals
-  totalExpenseEl.textContent = '0.00';
-  upiExpenseEl.textContent = '0.00';
-  cashExpenseEl.textContent = '0.00';
-  otherExpenseEl.textContent = '0.00';
+    localStorage.setItem("lastReset", todayDate); // Update the reset date
 
-  // Clear expense history list
-  expenseHistory.innerHTML = ''; 
-});
-
-
-// DOM Element
-const logoutButton = document.getElementById("logout-btn");
+    // Update UI
+    totalExpenseEl.textContent = dailyExpense.toFixed(2);
+    upiExpenseEl.textContent = dailyUpiExpense.toFixed(2);
+    cashExpenseEl.textContent = dailyCashExpense.toFixed(2);
+    otherExpenseEl.textContent = dailyOtherExpense.toFixed(2);
+  }
+}
 
 // Logout Functionality
-logoutButton.addEventListener("click", async () => {
+document.getElementById("logout-btn").addEventListener("click", async () => {
   try {
     await signOut(auth);
     alert("You have been logged out.");
-    // Redirect to login page
     window.location.href = "index.html";
   } catch (error) {
     console.error("Logout Error:", error.message);
