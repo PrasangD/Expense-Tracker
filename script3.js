@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
-import { getFirestore, collection, addDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+import { getFirestore, collection, addDoc, query, where, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
 
 // Firebase Configuration
 const firebaseConfig = {
@@ -33,15 +33,15 @@ const resetButton = document.getElementById("reset-btn");
 let dailyExpense = 0;
 let weeklyExpense = 0;
 let monthlyExpense = 0;
-let dailyUpiExpense = 0;
-let dailyCashExpense = 0;
-let dailyOtherExpense = 0;
+let upiExpense = 0;
+let cashExpense = 0;
+let otherExpense = 0;
 
 // Ensure User is Logged In
 onAuthStateChanged(auth, (user) => {
   if (user) {
-    resetDailyExpenseIfNeeded(); // Reset daily totals if needed
     fetchExpenses(user.uid);
+    resetDailyExpenseIfNeeded();
   } else {
     alert("Please log in to continue.");
     window.location.href = "index.html";
@@ -69,11 +69,11 @@ expenseForm.addEventListener("submit", async (e) => {
       amount,
       description,
       paymentMethod,
-      timestamp: now
+      timestamp: now,
     });
 
     alert("Expense added successfully!");
-    updateTotals(amount, paymentMethod, now);
+    updateTotals(amount, paymentMethod);
     addExpenseToHistory(amount, description, paymentMethod, now);
     expenseForm.reset();
   } catch (error) {
@@ -88,15 +88,6 @@ async function fetchExpenses(userId) {
   const querySnapshot = await getDocs(q);
 
   const groupedExpenses = {};
-  const today = new Date().toLocaleDateString();
-
-  // Reset totals
-  dailyExpense = 0;
-  dailyUpiExpense = 0;
-  dailyCashExpense = 0;
-  dailyOtherExpense = 0;
-  weeklyExpense = 0;
-  monthlyExpense = 0;
 
   querySnapshot.forEach((doc) => {
     const data = doc.data();
@@ -107,55 +98,31 @@ async function fetchExpenses(userId) {
     }
     groupedExpenses[date].push(data);
 
-    const amount = data.amount;
-    const method = data.paymentMethod;
-
-    // Update today's total only
-    if (date === today) {
-      dailyExpense += amount;
-      if (method === "UPI") dailyUpiExpense += amount;
-      if (method === "Cash") dailyCashExpense += amount;
-      if (method === "Other") dailyOtherExpense += amount;
-    }
-
-    // Update weekly and monthly totals
-    weeklyExpense += amount;
-    monthlyExpense += amount;
+    updateTotals(data.amount, data.paymentMethod);
   });
-
-  // Update UI
-  totalExpenseEl.textContent = dailyExpense.toFixed(2);
-  weeklyExpenseEl.textContent = weeklyExpense.toFixed(2);
-  monthlyExpenseEl.textContent = monthlyExpense.toFixed(2);
-  upiExpenseEl.textContent = dailyUpiExpense.toFixed(2);
-  cashExpenseEl.textContent = dailyCashExpense.toFixed(2);
-  otherExpenseEl.textContent = dailyOtherExpense.toFixed(2);
 
   // Render grouped expenses
   renderGroupedExpenses(groupedExpenses);
 }
 
 // Update Totals
-function updateTotals(amount, method, timestamp) {
-  const today = new Date().toDateString();
-  const expenseDate = new Date(timestamp).toDateString();
-
-  if (expenseDate === today) {
-    dailyExpense += amount;
-    if (method === "UPI") dailyUpiExpense += amount;
-    if (method === "Cash") dailyCashExpense += amount;
-    if (method === "Other") dailyOtherExpense += amount;
-  }
-
+function updateTotals(amount, method) {
+  const now = new Date();
+  dailyExpense += amount;
   weeklyExpense += amount;
   monthlyExpense += amount;
 
   totalExpenseEl.textContent = dailyExpense.toFixed(2);
   weeklyExpenseEl.textContent = weeklyExpense.toFixed(2);
   monthlyExpenseEl.textContent = monthlyExpense.toFixed(2);
-  upiExpenseEl.textContent = dailyUpiExpense.toFixed(2);
-  cashExpenseEl.textContent = dailyCashExpense.toFixed(2);
-  otherExpenseEl.textContent = dailyOtherExpense.toFixed(2);
+
+  if (method === "UPI") upiExpense += amount;
+  if (method === "Cash") cashExpense += amount;
+  if (method === "Other") otherExpense += amount;
+
+  upiExpenseEl.textContent = upiExpense.toFixed(2);
+  cashExpenseEl.textContent = cashExpense.toFixed(2);
+  otherExpenseEl.textContent = otherExpense.toFixed(2);
 }
 
 // Render Grouped Expenses
@@ -165,8 +132,10 @@ function renderGroupedExpenses(groupedExpenses) {
   Object.keys(groupedExpenses).forEach((date) => {
     const dateSection = document.createElement("li");
     dateSection.textContent = date;
+    dateSection.style.backgroundColor = "#f0f8ff"; // Light blue background for date
+    dateSection.style.padding = "10px";
     dateSection.style.fontWeight = "bold";
-    dateSection.style.marginTop = "10px";
+    dateSection.style.marginTop = "15px";
     expenseHistory.appendChild(dateSection);
 
     groupedExpenses[date].forEach((expense) => {
@@ -177,28 +146,72 @@ function renderGroupedExpenses(groupedExpenses) {
   });
 }
 
+// Add Expense to History
+function addExpenseToHistory(amount, description, paymentMethod, timestamp) {
+  const formattedDate = new Date(timestamp).toLocaleDateString();
+  const li = document.createElement("li");
+  li.textContent = `₹${amount} - ${paymentMethod} - ${description}`;
+  
+  // Check if a date section exists for the current date
+  let dateSection = document.querySelector(`[data-date="${formattedDate}"]`);
+  if (!dateSection) {
+    dateSection = document.createElement("li");
+    dateSection.textContent = formattedDate;
+    dateSection.style.backgroundColor = "#f0f8ff"; // Light blue background for date
+    dateSection.style.padding = "10px";
+    dateSection.style.fontWeight = "bold";
+    dateSection.style.marginTop = "15px";
+    dateSection.setAttribute("data-date", formattedDate);
+    expenseHistory.appendChild(dateSection);
+  }
+  
+  // Add the new expense to the current date section
+  dateSection.appendChild(li);
+}
+
 // Reset Daily Expense If Needed
 function resetDailyExpenseIfNeeded() {
   const now = new Date();
-  const todayDate = now.toDateString();
-  const lastResetDate = localStorage.getItem("lastReset") || todayDate;
+  const lastReset = localStorage.getItem("lastReset") || now.toDateString();
 
-  // Check if it's a new day
-  if (lastResetDate !== todayDate) {
+  if (lastReset !== now.toDateString()) {
     dailyExpense = 0;
-    dailyUpiExpense = 0;
-    dailyCashExpense = 0;
-    dailyOtherExpense = 0;
-
-    localStorage.setItem("lastReset", todayDate); // Update the reset date
-
-    // Update UI
+    localStorage.setItem("lastReset", now.toDateString());
     totalExpenseEl.textContent = dailyExpense.toFixed(2);
-    upiExpenseEl.textContent = dailyUpiExpense.toFixed(2);
-    cashExpenseEl.textContent = dailyCashExpense.toFixed(2);
-    otherExpenseEl.textContent = dailyOtherExpense.toFixed(2);
   }
+
+  // Schedule Reset at Midnight
+  const timeToMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1) - now;
+  setTimeout(resetDailyExpenseIfNeeded, timeToMidnight);
 }
+
+// Reset Current Day Expenses
+resetButton.addEventListener("click", async () => {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const now = new Date();
+  const today = now.toDateString();
+
+  // Remove Expenses from Firestore for Today
+  const q = query(
+    collection(db, "expenses"),
+    where("userId", "==", user.uid),
+    where("timestamp", ">=", new Date().setHours(0, 0, 0, 0)),
+    where("timestamp", "<=", new Date().setHours(23, 59, 59, 999))
+  );
+  const querySnapshot = await getDocs(q);
+
+  querySnapshot.forEach(async (doc) => {
+    await deleteDoc(doc.ref);
+  });
+
+  // Reset UI and Totals
+  dailyExpense = 0;
+  totalExpenseEl.textContent = dailyExpense.toFixed(2);
+  expenseHistory.innerHTML = "";
+  alert("Today's expenses have been reset.");
+});
 
 // Logout Functionality
 document.getElementById("logout-btn").addEventListener("click", async () => {
